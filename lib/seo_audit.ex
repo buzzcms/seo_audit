@@ -18,8 +18,13 @@ defmodule SeoAudit do
             src: get_first_attr(node, "img", "src"),
             alt: get_first_attr(node, "img", "alt")
           }
-        end)
+        end),
+      jsonld: get_json_ld(doc)
     }
+  end
+
+  def get_json_ld(doc) do
+    doc |> Floki.find("script[type='application/ld+json']") |> Enum.map(&extract_json_ld/1)
   end
 
   def parse_head(doc) do
@@ -52,6 +57,12 @@ defmodule SeoAudit do
       image: doc |> get_first_attr("head > meta[property='og:image']", "content"),
       site_name: doc |> get_first_attr("head > meta[property='og:site_name']", "content")
     }
+  end
+
+  defp extract_json_ld(node) do
+    regex = ~r/\<script.*?\>(.*)\<\/script\>/
+    html = node |> Floki.raw_html()
+    Regex.run(regex, html) |> Enum.at(1) |> Jason.decode!()
   end
 
   defp get_first_attr(doc, selector, attr) do
